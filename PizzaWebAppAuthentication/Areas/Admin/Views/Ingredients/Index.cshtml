@@ -1,0 +1,46 @@
+﻿@model IEnumerable<PizzaWebAppAuthentication.Models.AppModels.Ingredient>
+
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<h1>Ингредиенты</h1>
+
+<p>
+    <a asp-action="Create">Добавить новый ингредиент</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Название</th>
+            <th>Цена за порцию, р</th>
+            <th>Вес порции, гр</th>
+            <th>В наличии</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @item.Name
+                </td>
+                <td>
+                    @item.Price.ToString("C2")
+                </td>
+                <td>
+                    @item.PortionGrams
+                </td>
+                <td>
+                    @item.Availability
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id">Изменить</a> |
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="confirmDeletion">Удалить</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -1,0 +1,101 @@
+﻿@using PizzaWebAppAuthentication.Models.AppModels;
+@model IEnumerable<Pizza>
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="delivery-info">
+    <a href="@Url.Action("CreateCustomPizza", "Pizzas")">
+   <img src="@Url.Content("~/images/Constructor2.png")" alt="Logo"/>
+   </a>
+ </div>
+<p></p>
+<div class="grid">
+    @foreach (var item in Model)
+    {
+        <div class="grid-item">
+                        
+            <img src="images/@item.ImagePath" width="200" alt="" />
+            
+            <div class="grid-item-details">
+                <h3>@item.Name</h3>
+                <p>@item.PizzaBase.Name.ToLower() основа, @item.Size.Diameter см</p>
+
+                @if (item.Ingredients.Any())
+                {
+                    <p>@string.Join(", ", item.Ingredients.Select(c => c.Name)).ToLower()</p>
+                }
+                <h5>@item.Price руб.</h5>
+                <p></p>
+                <a class="btn btn-primary" asp-controller="Cart" asp-action="Add" asp-route-id="@item.Id">В корзину</a>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .grid {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        margin: -15px;
+    }
+
+    .grid-item {
+        box-sizing: border-box;
+        padding: 25px;
+        width: calc(25% - 40px);
+    }
+
+        .grid-item img {
+            max-width: 100%;
+        }
+
+    .grid-item-details h3 {
+        margin-top: 0;
+    }
+
+    .btn-primary {
+  background-color: #005f6b;
+  color: #fff;
+  border: none;
+  padding: 5px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+        .btn-primary:hover {
+  background-color: #F4B752;
+}
+
+    .grid-item-details p {
+        margin-bottom: 0;
+    }
+
+    .delivery-info {
+        color: #ff5201;
+        font-size: 24px;
+        background-color: #f8f8f8;
+        padding: 20px;
+        margin-top: 20px;
+        text-align: center;
+    }
+
+    .delivery-info img {
+  max-width: 100%;
+  height: auto;
+}
+
+        .delivery-info h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .delivery-info p {
+            font-size: 18px;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+
+</style>
