@@ -60,8 +60,6 @@ namespace PizzaWebAppAuthentication
                     .AddRoles<IdentityRole>()
                     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-                //builder.Services.AddTransient<IEmailSender, EmailSender>();
-
                 builder.Services.AddTransient<CreateDefaultUserService>();
 
                 builder.Services.AddTransient<InitializeDataBase>();
@@ -77,8 +75,7 @@ namespace PizzaWebAppAuthentication
                 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
                 builder.Services.AddScoped<IPizzaRepository, PizzaRepository>();
                 builder.Services.AddScoped<IIngredientRepository, IngredientRepository>();
-                //builder.Services.AddScoped(typeof(IRepositoryBase<,>), typeof(RepositoryBase<,>));
-
+                
                 builder.Services.AddScoped<IOrderServices, OrderServices>();
                 builder.Services.AddScoped<IPizzaServices, PizzaServices>();
                 builder.Services.AddScoped<IIngredientServises, IngredientServises>();
