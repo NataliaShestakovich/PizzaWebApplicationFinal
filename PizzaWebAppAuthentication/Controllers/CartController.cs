@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using PizzaWebAppAuthentication.Areas.Admin.Controllers;
 using PizzaWebAppAuthentication.Data;
 using PizzaWebAppAuthentication.Infrastructure;
 using PizzaWebAppAuthentication.Models.AppModels;
@@ -12,12 +13,16 @@ namespace PizzaWebAppAuthentication.Controllers
     {
         private readonly IPizzaServices _pizzaServices;
         private readonly PizzaOption _pizzaOption;
+        private readonly ILogger<CartController> _logger;
+
 
         public CartController(PizzaOption pizzaOption,
-                              IPizzaServices pizzaservices)
+                              IPizzaServices pizzaservices,
+                              ILogger<CartController> logger)
         {
             _pizzaOption = pizzaOption;
             _pizzaServices = pizzaservices;
+            _logger = logger;
         }
         public IActionResult Index()
         {

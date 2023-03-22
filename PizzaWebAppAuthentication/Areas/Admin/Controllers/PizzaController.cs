@@ -13,16 +13,26 @@ namespace PizzaWebAppAuthentication.Areas.Admin.Controllers
     {
         private readonly IPizzaServices _pizzaServices;
         private readonly PizzaOption _pizzaOption;
+        private readonly ILogger<PizzaController> _logger;
 
-        public PizzaController(IPizzaServices pizzaservices, PizzaOption pizzaOption)
+        public PizzaController(IPizzaServices pizzaservices, PizzaOption pizzaOption, ILogger<PizzaController> logger)
         {
             _pizzaServices = pizzaservices;
             _pizzaOption = pizzaOption;
+            _logger = logger;   
         }
 
         public async Task<IActionResult> Index()
         {
-            return View(await _pizzaServices.GetStandartPizzasAsync());
+            try
+            {
+               return View(await _pizzaServices.GetStandartPizzasAsync() ?? new List<Pizza>());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ex.Message);
+                return StatusCode(500);
+            }
         }
 
         public async Task<IActionResult> Create()
@@ -36,107 +46,129 @@ namespace PizzaWebAppAuthentication.Areas.Admin.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(PizzaViewModelForAdmin pizzaViewModel)
-        {
-            var ingredients = await _pizzaServices.GetIngredientNames();
-            ViewData["Ingredients"] = ingredients;
-            Pizza newPizza = new Pizza();
+        {            
+                var ingredients = await _pizzaServices.GetIngredientNames();
+                ViewData["Ingredients"] = ingredients;
+                Pizza newPizza = new Pizza();
 
-            var existingPizzas = await _pizzaServices.GetPizzasByName(pizzaViewModel.Name);
+                var existingPizzas = await _pizzaServices.GetPizzasByName(pizzaViewModel.Name);
 
-            if (existingPizzas.Count > 0)
-            {
-                ModelState.AddModelError("", string.Format(_pizzaOption.ErrorAddInDatabase, pizzaViewModel.Name));
-                return View(pizzaViewModel);
-            }
-
-            newPizza.Name = pizzaViewModel.Name;
-            newPizza.Price = pizzaViewModel.Price;
-            newPizza.Standart = true;
-            newPizza.PizzaBase = await _pizzaServices.GetPizzaBaseByName(_pizzaOption.StandartPizzaBase);
-            newPizza.Size = await _pizzaServices.GetSizeByDiameter(32);
-            newPizza.Ingredients = new List<Ingredient>();
-
-            if (ModelState.IsValid)
-            {
-                if (pizzaViewModel.ImageUpload != null)
+                if (existingPizzas.Count > 0)
                 {
-                    newPizza.ImagePath = await _pizzaServices.AddNewPizzaImageAsync(pizzaViewModel.ImageUpload);
-                }
-
-                if (pizzaViewModel.Ingredients == null || pizzaViewModel.Ingredients.Count == 0)
-                {
-                    TempData["Error"] = _pizzaOption.ErrorCreatingPizza;
-
+                    ModelState.AddModelError("", string.Format(_pizzaOption.ErrorAddInDatabase, pizzaViewModel.Name));
                     return View(pizzaViewModel);
                 }
 
-                foreach (var item in pizzaViewModel.Ingredients)
+                newPizza.Name = pizzaViewModel.Name;
+                newPizza.Price = pizzaViewModel.Price;
+                newPizza.Standart = true;
+                newPizza.PizzaBase = await _pizzaServices.GetPizzaBaseByName(_pizzaOption.StandartPizzaBase);
+                newPizza.Size = await _pizzaServices.GetSizeByDiameter(32);
+                newPizza.Ingredients = new List<Ingredient>();
+
+                if (ModelState.IsValid)
                 {
-                    Ingredient ingredient = await _pizzaServices.GetIngredientByName(item);
-                    newPizza.Ingredients.Add(ingredient);
+                    if (pizzaViewModel.ImageUpload != null)
+                    {
+                        newPizza.ImagePath = await _pizzaServices.AddNewPizzaImageAsync(pizzaViewModel.ImageUpload);
+                    }
+
+                    if (pizzaViewModel.Ingredients == null || pizzaViewModel.Ingredients.Count == 0)
+                    {
+                        TempData["Error"] = _pizzaOption.ErrorCreatingPizza;
+
+                        return View(pizzaViewModel);
+                    }
+
+                    foreach (var item in pizzaViewModel.Ingredients)
+                    {
+                        Ingredient ingredient = await _pizzaServices.GetIngredientByName(item);
+                        newPizza.Ingredients.Add(ingredient);
+                    }
+
+                    try
+                    {
+                        await _pizzaServices.AddPizzaToDatabaseAsync(newPizza);
+                        TempData["Success"] = String.Format(_pizzaOption.SuccessAddPizzaToDatabase, newPizza.Name);
+                    }
+                    catch (Exception)
+                    {
+                        TempData["Error"] = String.Format(_pizzaOption.ErrorAddPizzaToDatabase, newPizza.Name);
+                    }
+
+                    return RedirectToAction("Index");
                 }
 
-                try
-                {
-                    await _pizzaServices.AddPizzaToDatabaseAsync(newPizza);
-                    TempData["Success"] = String.Format(_pizzaOption.SuccessAddPizzaToDatabase, newPizza.Name);
-                }
-                catch (Exception)
-                {
-                    TempData["Error"] = String.Format(_pizzaOption.SuccessAddPizzaToDatabase, newPizza.Name);
-                }
-
-                return RedirectToAction("Index");
-            }
-
-            return View(pizzaViewModel);
+                return View(pizzaViewModel);            
         }
 
         public async Task<IActionResult> Edit(Guid id)
         {
-            Pizza pizza = await _pizzaServices.GetStandartPizzaByIdAsync(id);
+            try
+            {
+                Pizza pizza = await _pizzaServices.GetStandartPizzaByIdAsync(id);
 
-            return View(pizza);
+                return View(pizza);
+            }
+            catch (NullReferenceException ex)
+            {
+                _logger.LogError(ex, ex.Message);
+                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ex.Message);
+                return StatusCode(500);
+            }
+
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, Pizza pizza)
         {
-            if (ModelState.IsValid)
+            try
             {
-                var pizzasByName = await _pizzaServices.GetPizzasByName(pizza.Name);
-
-                IEnumerable<Pizza> anotherPizzaAlsoNamed = pizzasByName.Where(p => p.Id != pizza.Id) ?? new List<Pizza>();
-
-                if (anotherPizzaAlsoNamed.Count() > 0)
+                if (ModelState.IsValid)
                 {
-                    ModelState.AddModelError("", string.Format(_pizzaOption.ErrorAddInDatabase, pizza.Name));
-                    return View(pizza);
+                    var pizzasByName = await _pizzaServices.GetPizzasByName(pizza.Name);
+
+                    IEnumerable<Pizza> anotherPizzaAlsoNamed = pizzasByName.Where(p => p.Id != pizza.Id) ?? new List<Pizza>();
+
+                    if (anotherPizzaAlsoNamed.Count() > 0)
+                    {
+                        ModelState.AddModelError("", string.Format(_pizzaOption.ErrorAddInDatabase, pizza.Name));
+                        return View(pizza);
+                    }
+
+                    var existingPizza = await _pizzaServices.GetStandartPizzaByIdAsync(id);
+
+                    if (pizza.ImageUpload != null)
+                    {
+                        existingPizza.ImagePath = await _pizzaServices.AddNewPizzaImageAsync(pizza.ImageUpload);
+                    }
+
+                    existingPizza.Name = pizza.Name;
+                    existingPizza.Price = pizza.Price;
+
+                    try
+                    {
+                        await _pizzaServices.UpdatePizzaInDatabaseAsync(existingPizza);
+                        TempData["Success"] = String.Format(_pizzaOption.SuccessUpdatePizzaInDatabase, existingPizza.Name);
+                    }
+                    catch (Exception)
+                    {
+                        TempData["Error"] = String.Format(_pizzaOption.ErrorUpdatePizzaInDatabase, existingPizza.Name);
+                    }
                 }
 
-                var existingPizza = await _pizzaServices.GetStandartPizzaByIdAsync(id);
-
-                if (pizza.ImageUpload != null)
-                {
-                    existingPizza.ImagePath = await _pizzaServices.AddNewPizzaImageAsync(pizza.ImageUpload);
-                }
-
-                existingPizza.Name = pizza.Name;
-                existingPizza.Price = pizza.Price;
-
-                try
-                {
-                    await _pizzaServices.UpdatePizzaInDatabaseAsync(existingPizza);
-                    TempData["Success"] = String.Format(_pizzaOption.SuccessUpdatePizzaInDatabase, existingPizza.Name);
-                }
-                catch (Exception)
-                {
-                    TempData["Error"] = String.Format(_pizzaOption.ErrorUpdatePizzaInDatabase, existingPizza.Name);
-                }
+                return RedirectToAction("Index");
             }
-
-            return RedirectToAction("Index");
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ex.Message);
+                return StatusCode(500);
+            }
         }
 
         public async Task<IActionResult> Delete(Guid id)

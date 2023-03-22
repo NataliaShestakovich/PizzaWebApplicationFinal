@@ -9,13 +9,15 @@ namespace PizzaWebAppAuthentication.Models.ViewModels.PizzaViewModels
     {
         public List<string> Ingredients { get; set; }
 
+        [Required]
         public string Name { get; set; }
 
         [Required]
         [Range(0.01, double.MaxValue, ErrorMessage = "Please enter a value")]
         [Column(TypeName = "decimal(4, 2)")]
         public decimal Price { get; set; }
-        
+
+        [Required]
         [FileExtention]
         public IFormFile ImageUpload { get; set; }        
     }

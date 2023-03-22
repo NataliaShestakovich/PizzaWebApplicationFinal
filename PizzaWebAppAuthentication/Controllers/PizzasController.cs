@@ -11,26 +11,36 @@ namespace PizzaWebAppAuthentication.Controllers
     {
         private readonly IPizzaServices _pizzaServices;
         private readonly PizzaOption _pizzaOption;
+        private readonly ILogger<PizzasController> _logger;
 
-        public PizzasController(IPizzaServices pizzaservices, PizzaOption pizzaOption)
+        public PizzasController(IPizzaServices pizzaservices, PizzaOption pizzaOption, ILogger<PizzasController> logger)
         {
             _pizzaServices = pizzaservices;
             _pizzaOption = pizzaOption;
+            _logger = logger;
         }
 
         [HttpGet]
-        public async Task<IActionResult> CreateCustomPizza() 
+        public async Task<IActionResult> CreateCustomPizza()
         {
-            var ingredients = await _pizzaServices.GetAvailableIngredientNames();
-            ViewData["Ingredients"] = ingredients;
+            try
+            {
+                var ingredients = await _pizzaServices.GetAvailableIngredientNames();
+                ViewData["Ingredients"] = ingredients;
 
-            var bases = await _pizzaServices.GetPizzaBases() ;
-            ViewData["Bases"] = bases;
+                var bases = await _pizzaServices.GetPizzaBases();
+                ViewData["Bases"] = bases;
 
-            var sizes = await _pizzaServices.GetSizes();
-            ViewData["Sizes"] = sizes;
+                var sizes = await _pizzaServices.GetSizes();
+                ViewData["Sizes"] = sizes;
 
-            return View();
+                return View();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ex.Message);
+                return StatusCode(500);
+            }
         }
 
         [HttpPost]
